@@ -1,48 +1,56 @@
 pipeline {
     agent any
-    
+
+    environment {
+        REPO_URL = 'https://github.com/Gaurang-Maheshwari/DevOps-ecommerce.git'
+        BACKEND_DIR = 'server'
+        FRONTEND_DIR = 'client'
+    }
+
     stages {
         stage('Clone Repository') {
             steps {
-                // Cloning the GitHub repository
-                git credentialsId: 'github-user-pass', url: 'https://github.com/Gaurang-Maheshwari/DevOps-ecommerce.git', branch: 'main'
+                git branch: 'main', url: "${REPO_URL}"
+                echo 'Repository cloned successfully'
             }
         }
-
         stage('Install Backend Dependencies') {
             steps {
-                dir('server') {
-                    sh 'npm install'
+                dir("${BACKEND_DIR}") {
+                    bat 'npm install'
                 }
             }
         }
-
         stage('Install Frontend Dependencies') {
             steps {
-                dir('client') {
-                    sh 'npm install'
+                dir("${FRONTEND_DIR}") {
+                    bat 'npm install'
                 }
             }
         }
-
-        stage('Test (Placeholder)') {
+        stage('Test') {
             steps {
-                echo 'Running Tests (To be implemented)...'
-                // Example: sh 'npm test' (Add actual test command later)
+                echo 'Running tests...'
+                dir("${BACKEND_DIR}") {
+                    bat 'npm test'  // Replace with actual test command if different
+                }
+                dir("${FRONTEND_DIR}") {
+                    bat 'npm test'  // Replace with actual test command if different
+                }
             }
         }
-
-        stage('Build (Placeholder)') {
+        stage('Build') {
             steps {
-                echo 'Building Application (To be implemented)...'
-                // Example: sh 'npm run build' (Add actual build command later)
+                echo 'Building the application...'
+                dir("${FRONTEND_DIR}") {
+                    bat 'npm run build'
+                }
             }
         }
-
-        stage('Deploy (Placeholder)') {
+        stage('Deploy') {
             steps {
-                echo 'Deploying Application (To be implemented)...'
-                // Example: sh './deploy.sh' (Add actual deploy command later)
+                echo 'Deploying the application...'
+                // Add deployment steps here
             }
         }
     }
