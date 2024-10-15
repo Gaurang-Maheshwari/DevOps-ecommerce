@@ -1,63 +1,37 @@
 pipeline {
     agent any
-
-    environment {
-        REPO_URL = 'https://github.com/Gaurang-Maheshwari/DevOps-ecommerce.git'
-        BACKEND_DIR = 'server'
-        FRONTEND_DIR = 'client'
-    }
-
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "${REPO_URL}"
-                echo 'Repository cloned successfully'
+                git credentialsId: 'github-credentials-id', url: 'https://github.com/Gaurang-Maheshwari/DevOps-ecommerce.git'
             }
         }
-        stage('Install Backend Dependencies') {
+        stage('Install Dependencies') {
             steps {
-                dir("${BACKEND_DIR}") {
-                    bat 'npm install'
+                sh 'cd server && npm install'
+                sh 'cd client && npm install'
+            }
+        }
+        stage('Build Frontend') {
+            steps {
+                sh 'cd client && npm run build'
+            }
+        }
+        stage('Deploy to EC2') {
+            steps {
+                sshagent(credentials: ['ec2-mern-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no mern-ecommerce@13.60.171.184  << EOF
+                        cd /home/ec2-user/mern-ecommerce
+                        git pull origin main
+                        npm install --prefix server
+                        npm install --prefix client
+                        npm run build --prefix client
+                        pm2 restart all
+                    EOF
+                    '''
                 }
             }
-        }
-        stage('Install Frontend Dependencies') {
-            steps {
-                dir("${FRONTEND_DIR}") {
-                    bat 'npm install'
-                }
-            }
-        }
-        stage('Test') {
-            steps {
-                echo 'Running tests...'
-                dir("${BACKEND_DIR}") {
-                    bat 'npm test'  // Replace with actual test command if different
-                }
-                dir("${FRONTEND_DIR}") {
-                    bat 'npm test'  // Replace with actual test command if different
-                }
-            }
-        }
-        stage('Build') {
-            steps {
-                echo 'Building the application...'
-                dir("${FRONTEND_DIR}") {
-                    bat 'npm run build'
-                }
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying the application...'
-                // Add deployment steps here
-            }
-        }
-    }
-
-    post {
-        always {
-            echo 'Pipeline completed.'
         }
     }
 }
