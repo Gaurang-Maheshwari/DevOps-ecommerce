@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: ./server
+    ports:
+      - "5000:5000" # Exposing backend port
+    environment:
+      - NODE_ENV=development
+      - MONGO_URI=mongodb://mongo:27017/items
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./client
+    ports:
+      - "3000:3000" # Exposing frontend port
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017" # Exposing MongoDB port
