@@ -20,6 +20,33 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies and Start Applications') {
+            steps {
+                script {
+                    // Install dependencies and start the client and server
+                    dir('client') {
+                        if (fileExists('package.json')) {
+                            sh 'npm install'
+                            // Start the client application
+                            sh 'npm start &'
+                        } else {
+                            echo 'Client folder does not exist. Skipping npm install and start for the client.'
+                        }
+                    }
+
+                    dir('server') {
+                        if (fileExists('package.json')) {
+                            sh 'npm install'
+                            // Start the server application
+                            sh 'npm start &'
+                        } else {
+                            echo 'Server folder does not exist. Skipping npm install and start for the server.'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -33,8 +60,8 @@ pipeline {
             steps {
                 script {
                     // Log in to Docker registry and push the image
-                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'gaurang09', passwordVariable: 'p09122002')]) { // Ensure you have Docker credentials stored in Jenkins
-                        sh "echo $DOCKER_PASSWORD | docker login ${REGISTRY_URL} -u gaurang09 --password-stdin"
+                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh "echo $PASSWORD | docker login ${REGISTRY_URL} -u $USERNAME --password-stdin"
                         sh "docker push ${REGISTRY_URL}/mern-client-image:latest"
                     }
                 }
@@ -45,7 +72,7 @@ pipeline {
             steps {
                 script {
                     // Run SonarQube scanner for static code analysis
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) { // Change 'sonar-token' to your Jenkins credentials ID
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         sh "sonar-scanner -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.login=${SONAR_TOKEN}"
                     }
                 }
@@ -56,7 +83,7 @@ pipeline {
             steps {
                 script {
                     // Deploy the application to Kubernetes
-                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/deployment.yaml" // Adjust path to your Kubernetes deployment YAML file
+                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/deployment.yaml"
                     sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/service.yaml" // Assuming you have a service definition
                 }
             }
@@ -75,9 +102,9 @@ pipeline {
             steps {
                 script {
                     // Deploy Elasticsearch, Logstash, and Kibana
-                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/elk/elasticsearch.yaml --namespace=${ELK_NAMESPACE}" // Adjust path for Elasticsearch YAML
-                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/elk/logstash.yaml --namespace=${ELK_NAMESPACE}" // Adjust path for Logstash YAML
-                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/elk/kibana.yaml --namespace=${ELK_NAMESPACE}" // Adjust path for Kibana YAML
+                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/elk/elasticsearch.yaml --namespace=${ELK_NAMESPACE}"
+                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/elk/logstash.yaml --namespace=${ELK_NAMESPACE}"
+                    sh "kubectl --kubeconfig=${KUBE_CONFIG} apply -f k8s/elk/kibana.yaml --namespace=${ELK_NAMESPACE}"
                 }
             }
         }
