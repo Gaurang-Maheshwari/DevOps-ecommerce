@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: new-app  # Updated deployment name
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: new-app  # Update this to match the deployment name if needed
+  template:
+    metadata:
+      labels:
+        app: new-app  # Update this label to match the new name
+    spec:
+      containers:
+      - name: new-app-container  # Updated container name
+        image: <your-registry>/new-app:latest  # Make sure this matches your new image name
+        ports:
+        - containerPort: 80
